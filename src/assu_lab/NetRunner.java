@@ -1,10 +1,15 @@
 package assu_lab;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+
 public class NetRunner {
 
 	public static void main(String[] args) throws Exception {
 		int input = 0, hidden = 0, output = 0, cycles = 0, numberOfPatterns = 0;
-		String patternFile = null, outputFile = null;
+		String patternFile = null, outputFile = null, testFile = null;
 		double learningRate = 0, moment = 0;
 		for (int i = 0; i < args.length; i++) {
 			switch (i) {
@@ -24,15 +29,18 @@ public class NetRunner {
 				outputFile = args[i];
 				break;
 			case 5:
-				learningRate = Double.parseDouble(args[i]);
+				testFile = args[i];
 				break;
 			case 6:
-				moment = Double.parseDouble(args[i]);
+				learningRate = Double.parseDouble(args[i]);
 				break;
 			case 7:
-				cycles = Integer.parseInt(args[i]);
+				moment = Double.parseDouble(args[i]);
 				break;
 			case 8:
+				cycles = Integer.parseInt(args[i]);
+				break;
+			case 9:
 				numberOfPatterns = Integer.parseInt(args[i]);
 				break;
 
@@ -40,21 +48,46 @@ public class NetRunner {
 				throw new Exception("Input argument exception");
 			}
 		}
-		LabNet Net_1 = new LabNet(input, hidden, output, patternFile,
-				outputFile);
-		Net_1.trainFirstNetwork(patternFile, outputFile, learningRate, moment,
-				cycles, numberOfPatterns);
-		
-		float[] input_parameters = new float[] { 1.0f, 1.0f };//TODO ADD MORE THAN ONE INPUT
-		float[] result = Net_1.getFirstNetworkOutput(input_parameters);
-		System.out.println("Rezultat 1 je: " + result[0]);
+		LabNet Net_1 = new LabNet(input, hidden, output, patternFile, outputFile);
+		LabNet2 Net_2 = new LabNet2(input, hidden, output, patternFile, outputFile);
+		Net_1.trainNetwork(patternFile, outputFile, learningRate, moment, cycles, numberOfPatterns);
+		Net_2.trainNetwork(patternFile, "out_end.txt", learningRate, moment, cycles, numberOfPatterns);
+		float[] input_parameters1 = new float[input];
+		float[] input_parameters2 = new float[output];
 
-		Net_1.trainSecondNetwork(patternFile, "out_end", learningRate, moment,
-				cycles, numberOfPatterns);
-		
-		float[] input_parameters2 = new float[] { 1.0f, 1.0f };
-		float[] result2 = Net_1.getSecondNetworkOutput(input_parameters2);
-		System.out.println("Rezultat 2 je: " + result2[0]);
+		try (BufferedReader br = new BufferedReader(new FileReader(testFile))) {
+			String line;
+			BufferedWriter out = new BufferedWriter(new FileWriter("output_"+testFile));
+
+			while ((line = br.readLine()) != null) {
+				int j = 0;
+				String[] myData = line.split(";");
+				for (int i = 0; i < input + output; i++) {
+					if (i < input) {
+						input_parameters1[i] = Float.parseFloat(myData[i]);
+
+					} else {
+						input_parameters2[j++] = Float.parseFloat(myData[i]);
+					}
+				}
+
+				float[] resultOutput = Net_1.getNetworkOutput(input_parameters1);
+				float[] resultInput = Net_2.getNetworkOutput(input_parameters2);
+				System.out.print("Rezultat je: ");
+				for (int i = 0; i < resultInput.length; i++) {
+					System.out.print(resultInput[i] + " ");
+					out.write(resultInput[i] + ";");
+				}
+				for (int i = 0; i < resultOutput.length; i++) {
+					System.out.print(resultOutput[i] + " ");
+					out.write(resultOutput[i] + ";");
+				}
+				System.out.println();
+				out.newLine();
+
+			}
+			out.close();
+		}
 
 	}
 
